@@ -10,6 +10,10 @@ import google_auth_oauthlib.flow
 import googleapiclient.discovery
 import googleapiclient.errors
 
+from pprint import pprint
+from datetime import datetime
+import locale
+
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 
 def get_credentials():
@@ -49,8 +53,23 @@ def main():
         id="dQw4w9WgXcQ"
     )
     response = request.execute()
+    pprint(response['items'][0])
+    yt_pub_at = response['items'][0]['snippet']['publishedAt']
 
-    print(response['items'][0]['snippet']['publishedAt'])
+    request = youtube.videos().list(
+        part="statistics",
+        id="dQw4w9WgXcQ"
+    )
+    response = request.execute()
+    pprint(response['items'][0])
+    yt_view_count = response['items'][0]['statistics']['viewCount']
+
+
+    # Set the locale to the user's default (e.g., en_US)
+    locale.setlocale(locale.LC_ALL, '')
+    yt_pub_at = datetime.strptime(yt_pub_at, '%Y-%m-%dT%H:%M:%SZ').strftime('%B %d, %Y')
+    yt_view_count = locale.format_string('%d', int(yt_view_count), grouping=True)
+    print(f'Video published {yt_pub_at} and has {yt_view_count} views')
 
 if __name__ == "__main__":
     main()
