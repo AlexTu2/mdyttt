@@ -20,7 +20,7 @@ md_yt_link_pattern = re.compile(r"(?=\[(!\[.+?\]\(.+?\)|.+?)]\((https:\/\/[^\)]+
 yt_tooltip_pattern = re.compile(r"^(https?://[^\s\"]+)(?:\s+\"(.+)\")?$")
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
 
-def process_md_file(file_path):
+def process_md_file(youtube, file_path):
     # Read the contents of the Markdown file
     with open(file_path, 'r') as file:
         markdown_content = file.read()
@@ -34,9 +34,26 @@ def process_md_file(file_path):
     youtube_links = re.findall(md_yt_link_pattern, markdown_content)
 
     for link_tuple in youtube_links:
+        if video_id(link_tuple[1]) == None:
+            continue
         original_link = yt_tooltip_pattern.findall(link_tuple[1])[0]
-        print(original_link)
-        print(f'link is {original_link[0]} tooltip is {original_link[1]}')
+##        print(original_link)
+##        print(f'link is {original_link[0]} tooltip is {original_link[1]}')
+
+        response = get_yt_request(youtube, 'snippet', video_id(original_link[0]))
+##        pprint(response['items'][0])
+        yt_pub_at = response['items'][0]['snippet']['publishedAt']
+
+        response = get_yt_request(youtube, 'statistics', video_id(original_link[0]))
+##        pprint(response['items'][0])
+        yt_view_count = response['items'][0]['statistics']['viewCount']
+
+        # Set the locale to the user's default (e.g., en_US)
+        locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
+        yt_pub_at = datetime.strptime(yt_pub_at, '%Y-%m-%dT%H:%M:%SZ').strftime('%B %d, %Y')
+        yt_view_count = locale.format_string('%d', int(yt_view_count), grouping=True)
+        print(f'{original_link[0]} Video published {yt_pub_at} and has {yt_view_count} views')
+        
 
 
 def get_credentials():
@@ -106,19 +123,7 @@ def main():
 
     youtube = connect_yt_api()
 
-    response = get_yt_request(youtube, 'snippet', 'dQw4w9WgXcQ')
-    pprint(response['items'][0])
-    yt_pub_at = response['items'][0]['snippet']['publishedAt']
-
-    response = get_yt_request(youtube, 'statistics', 'dQw4w9WgXcQ')
-    pprint(response['items'][0])
-    yt_view_count = response['items'][0]['statistics']['viewCount']
-
-    # Set the locale to the user's default (e.g., en_US)
-    locale.setlocale(locale.LC_ALL, '')
-    yt_pub_at = datetime.strptime(yt_pub_at, '%Y-%m-%dT%H:%M:%SZ').strftime('%B %d, %Y')
-    yt_view_count = locale.format_string('%d', int(yt_view_count), grouping=True)
-    print(f'Video published {yt_pub_at} and has {yt_view_count} views')
+    process_md_file(youtube, 'job.md')
 
 if __name__ == "__main__":
     main()
