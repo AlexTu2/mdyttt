@@ -14,7 +14,29 @@ from pprint import pprint
 from datetime import datetime
 import locale
 
+import re
+md_yt_link_pattern = re.compile(r"(?=\[(!\[.+?\]\(.+?\)|.+?)]\((https:\/\/[^\)]+)\))")
+yt_tooltip_pattern = re.compile(r"^(https?://[^\s\"]+)(?:\s+\"(.+)\")?$")
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
+
+def process_md_file(file_path):
+    # Read the contents of the Markdown file
+    with open(file_path, 'r') as file:
+        markdown_content = file.read()
+
+    # Define a regular expression pattern to match YouTube links
+    youtube_pattern = r'\[(.*?)\]\((https?://)?(www\.)?youtu(\.be/|be\.com/watch\?v=)([\w-]+)\)'
+    md_yt_link_pattern = re.compile(r"(?=\[(!\[.+?\]\(.+?\)|.+?)]\((https:\/\/[^\)]+)\))")
+    yt_tooltip_pattern = re.compile(r"^(https?://[^\s\"]+)(?:\s+\"(.+)\")?$")
+
+    # Find all YouTube links in the Markdown content
+    youtube_links = re.findall(md_yt_link_pattern, markdown_content)
+
+    for link_tuple in youtube_links:
+        original_link = yt_tooltip_pattern.findall(link_tuple[1])[0]
+        print(original_link)
+        print(f'link is {original_link[0]} tooltip is {original_link[1]}')
+
 
 def get_credentials():
     # Check if credentials file exists
