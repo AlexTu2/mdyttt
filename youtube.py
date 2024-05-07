@@ -52,9 +52,13 @@ def process_md_file(youtube, file_path):
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         yt_pub_at = datetime.strptime(yt_pub_at, '%Y-%m-%dT%H:%M:%SZ').strftime('%B %d, %Y')
         yt_view_count = locale.format_string('%d', int(yt_view_count), grouping=True)
-        print(f'{original_link[0]} Video published {yt_pub_at} and has {yt_view_count} views')
-        
+        modified_link = f'{original_link[0]} "Video published {yt_pub_at} and has {yt_view_count} views"'
 
+        markdown_content = markdown_content.replace(link_tuple[1], modified_link)
+        
+    # Write the modified content back to the Markdown file
+    with open('mdyttt'+file_path, 'w') as file:
+        file.write(markdown_content)
 
 def get_credentials():
     # Check if credentials file exists
