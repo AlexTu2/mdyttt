@@ -13,6 +13,7 @@ import googleapiclient.errors
 from pprint import pprint
 from datetime import datetime
 import locale
+from urllib.parse import urlparse, parse_qs
 
 import re
 md_yt_link_pattern = re.compile(r"(?=\[(!\[.+?\]\(.+?\)|.+?)]\((https:\/\/[^\)]+)\))")
@@ -54,11 +55,37 @@ def get_credentials():
             pickle.dump(credentials, token)
     return credentials
 
-def main():
-    # Disable OAuthlib's HTTPS verification when running locally.
-    # *DO NOT* leave this option enabled in production.
-    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+def video_id(value):
+    """
+    Examples:
+    - http://youtu.be/SA2iWivDJiE
+    - http://www.youtube.com/watch?v=_oPAwA_Udwc&feature=feedu
+    - http://www.youtube.com/embed/SA2iWivDJiE
+    - http://www.youtube.com/v/SA2iWivDJiE?version=3&amp;hl=en_US
+    https://stackoverflow.com/a/7936523/9091833
+    """
+    query = urlparse(value)
+    if query.hostname == 'youtu.be':
+        return query.path[1:]
+    if query.hostname in ('www.youtube.com', 'youtube.com'):
+        if query.path == '/watch':
+            p = parse_qs(query.query)
+            return p['v'][0]
+        if query.path[:7] == '/embed/':
+            return query.path.split('/')[2]
+        if query.path[:3] == '/v/':
+            return query.path.split('/')[2]
+    # fail?
+    return None
 
+def get_yt_request(youtube, part, yt_id):
+    request = youtube.videos().list(
+        part=part,
+        id=yt_id
+    )
+    return request.execute()
+
+def connect_yt_api():
     api_service_name = "youtube"
     api_version = "v3"
     client_secrets_file = "YOUR_CLIENT_SECRET_FILE.json"
@@ -69,23 +96,23 @@ def main():
     # Create an API client using the stored credentials
     youtube = googleapiclient.discovery.build(
         api_service_name, api_version, credentials=credentials)
+    
+    return youtube
 
-    request = youtube.videos().list(
-        part="snippet",
-        id="dQw4w9WgXcQ"
-    )
-    response = request.execute()
+def main():
+    # Disable OAuthlib's HTTPS verification when running locally.
+    # *DO NOT* leave this option enabled in production.
+    os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
+
+    youtube = connect_yt_api()
+
+    response = get_yt_request(youtube, 'snippet', 'dQw4w9WgXcQ')
     pprint(response['items'][0])
     yt_pub_at = response['items'][0]['snippet']['publishedAt']
 
-    request = youtube.videos().list(
-        part="statistics",
-        id="dQw4w9WgXcQ"
-    )
-    response = request.execute()
+    response = get_yt_request(youtube, 'statistics', 'dQw4w9WgXcQ')
     pprint(response['items'][0])
     yt_view_count = response['items'][0]['statistics']['viewCount']
-
 
     # Set the locale to the user's default (e.g., en_US)
     locale.setlocale(locale.LC_ALL, '')
