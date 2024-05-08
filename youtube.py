@@ -13,9 +13,12 @@ import googleapiclient.errors
 from pprint import pprint
 from datetime import datetime
 import locale
-from urllib.parse import urlparse, parse_qs
 
 import re
+from urllib.parse import urlparse, parse_qs
+import argparse
+
+
 md_yt_link_pattern = re.compile(r"(?=\[(!\[.+?\]\(.+?\)|.+?)]\((https:\/\/[^\)]+)\))")
 yt_tooltip_pattern = re.compile(r"^(https?://[^\s\"]+)(?:\s+\"(.+)\")?$")
 scopes = ["https://www.googleapis.com/auth/youtube.readonly"]
@@ -125,9 +128,21 @@ def main():
     # *DO NOT* leave this option enabled in production.
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
-    youtube = connect_yt_api()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-f",
+        "--file",
+        help="Usage: mdyttt -f file.md",
+    )
+    args = parser.parse_args()
 
-    process_md_file(youtube, 'job.md')
+    if args.file:
+        file = args.file
+
+    youtube = connect_yt_api()
+    process_md_file(youtube, file)
+
+    
 
 if __name__ == "__main__":
     main()
