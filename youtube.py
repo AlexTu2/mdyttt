@@ -18,6 +18,7 @@ import re
 from urllib.parse import urlparse, parse_qs
 import argparse
 
+from isodate import parse_duration
 
 md_yt_link_pattern = re.compile(r"(?=\[(!\[.+?\]\(.+?\)|.+?)]\((https:\/\/[^\)]+)\))")
 yt_tooltip_pattern = re.compile(r"^(https?://[^\s\"]+)(?:\s+\"(.+)\")?$")
@@ -51,11 +52,14 @@ def process_md_file(youtube, file_path):
 ##        pprint(response['items'][0])
         yt_view_count = response['items'][0]['statistics']['viewCount']
 
+        response = get_yt_request(youtube, "contentDetails", video_id(original_link[0]))
+        yt_duration = parse_duration(response['items'][0]['contentDetails']['duration'])
+
         # Set the locale to the user's default (e.g., en_US)
         locale.setlocale(locale.LC_ALL, 'en_US.UTF-8')
         yt_pub_at = datetime.strptime(yt_pub_at, '%Y-%m-%dT%H:%M:%SZ').strftime('%B %d, %Y')
         yt_view_count = locale.format_string('%d', int(yt_view_count), grouping=True)
-        modified_link = f'{original_link[0]} "Video published {yt_pub_at} and has {yt_view_count} views"'
+        modified_link = f'{original_link[0]} "{yt_duration} Video published {yt_pub_at} and has {yt_view_count} views"'
 
         markdown_content = markdown_content.replace(link_tuple[1], modified_link)
         
