@@ -138,6 +138,8 @@ def main():
 
     if args.file:
         file = args.file
+    else:
+        file = input("Enter path to file: ")
 
     youtube = connect_yt_api()
     process_md_file(youtube, file)
